@@ -1,0 +1,47 @@
+dist: trusty
+language: rust
+sudo: false
+
+matrix:
+  include:
+    - rust: stable
+      os: linux
+
+    - rust: stable
+      os: windows
+
+    - rust: stable
+      os: osx
+
+    # Audit only
+    - env: CARGO_AUDIT=1
+      rust: stable
+
+
+before_install:
+  - set -e
+  - |
+    if [ $TRAVIS_OS_NAME = windows ]; then
+        choco install windows-sdk-10.0
+    fi
+    if [[ ! -z "$CARGO_AUDIT" ]]; then
+      which cargo-audit || cargo install --debug cargo-audit
+    fi
+# --debug for faster build at the minimal expense of runtime speed
+
+script:
+  - |
+    if [[ -z "$CARGO_AUDIT" ]]; then
+      cargo build
+      cargo test
+    else
+      cargo check
+      cargo audit
+    fi
+
+after_script: set +e
+
+cache: cargo
+before_cache:
+  # Travis can't cache files that are not readable by "others"
+  - chmod -R a+r $HOME/.cargo
